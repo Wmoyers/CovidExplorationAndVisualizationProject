@@ -1,0 +1,92 @@
+-- world wide cases, deaths and death percentage
+-- 1st tableau sheet
+SELECT SUM(new_cases) as total_cases, SUM(cast(new_deaths as INT)) as total_deaths, SUM(cast(new_deaths as INT))/SUM(new_cases)*100 as DeathPercentage
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+WHERE continent is not null
+order by 1,2
+
+
+--showing death count based on continent 
+-- 2nd tableau sheet
+SELECT location,  MAX(cast(total_deaths as INT)) as TotalDeathCount
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+WHERE continent IS NULL
+and location not in ('World','European Union', 'International')
+GROUP BY location
+ORDER BY TotalDeathCount desc
+
+
+
+
+--highest infection, % infected, by country
+--3rd tableau sheet
+Select Location, Population, MAX(total_cases) as HighestInfectionCount,  Max((total_cases/population))*100 as PercentPopulationInfected
+From PortfolioProjectCovidDataExploration..CovidDeaths
+Group by Location, Population
+order by PercentPopulationInfected desc
+
+--4th tableau sheet
+Select Location, Population,date, MAX(total_cases) as HighestInfectionCount,  Max((total_cases/population))*100 as PercentPopulationInfected
+From PortfolioProjectCovidDataExploration..CovidDeaths
+Group by Location, Population, date
+order by PercentPopulationInfected desc
+
+
+--
+--Additional data exploration 
+--Not included in tableau visualization
+--
+
+
+SELECT *
+FROM PortfolioProjectCovidDataExploration..CovidVaccinations
+order by 3,4
+
+SELECT location, date, total_cases, new_cases, total_deaths, population
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+order by 1,2
+
+--total cases vs total deaths
+
+SELECT location, date, total_cases, total_deaths, population, (total_deaths/total_cases)*100 as DeathPercentage
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+WHERE location like '%states%'
+order by 1,2
+
+
+-- Looking at total cases vs Population
+-- shows % of population got covid
+
+SELECT location, date, total_cases,  population, (total_cases/population)*100 as PercentagePopulationCovid
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+WHERE location like '%states%'
+order by 1,2
+
+-- countries with highest infection rate compare to population
+
+SELECT location, population, MAX(total_cases) as HighestInfectionCount, MAX((total_cases/population))*100 as PercentagePopulationCovid
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+--WHERE location like '%states%'
+GROUP BY location, population
+order by 4 desc
+
+
+--showing countries with highest death count per population
+-- Data has continent mixed with location so we must remove that to see only individual countries 
+
+SELECT location,  MAX(cast(total_deaths as INT)) as TotalDeathCount
+FROM PortfolioProjectCovidDataExploration..CovidDeaths
+WHERE continent IS NOT NULL
+GROUP BY location
+ORDER BY TotalDeathCount desc
+
+--total population vs vaccinations
+
+SELECT death.continent, death.location, death.date, death.population, vax.new_vaccinations,
+ SUM(CONVERT(int, vax.new_vaccinations)) OVER (Partition by death.location order by death.location, death.date) as total_vax_running_total
+FROM PortfolioProjectCovidDataExploration..CovidDeaths death
+JOIN PortfolioProjectCovidDataExploration..CovidVaccinations vax
+	ON death.location = vax.location 
+	and death.date = vax.date
+WHERE death.continent is not null
+ORDER BY 2,3
